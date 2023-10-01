@@ -1,141 +1,55 @@
-import javax.swing.*;
-import javax.swing.plaf.UIResource;
-import javax.swing.text.*;
-import java.awt.*;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Scanner;
+import java.io.*;
+import java.util.Arrays;
 
-public class Main extends JDialog{
+public class Main {
+    public static void main(String[] args) throws IOException {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream("/home/rhuan/Intellij-workspace/turingMachine/src/entrada-quintupla.txt")));
 
-    public static void main(String[] args){
+        TuringMachine machine = new TuringMachine();
 
-        Scanner sc = new Scanner(System.in);
+        StringBuilder sb = new StringBuilder();
 
-        int stateAmount = sc.nextInt();
-        int inputAlphabetAmount = sc.nextInt();
-        int tapeAlphabetAmount = sc.nextInt();
-        int functionAmount = sc.nextInt();
+        String[] sizes = reader.readLine().split(" ");
+        int n_transitions = Integer.parseInt(sizes[3]);
 
-        String[] states = new String[stateAmount];
-        for(int i = 0; i < stateAmount; i++)
-            states[i] = sc.next();
+        String[] states = reader.readLine().split(" ");
+        for (String state : states)
+            machine.addState(state);
 
-        Character[] inputAlphabet = new Character[inputAlphabetAmount];
-        for(int i = 0; i < inputAlphabetAmount; i++)
-            inputAlphabet[i] = sc.next().charAt(0);
+        String[] input_alphabet = reader.readLine().split(" ");
+        machine.setInputAlphabet(String.join("", input_alphabet));
 
-        Character[] tapeAlphabet = new Character[tapeAlphabetAmount];
-        for(int i = 0; i < tapeAlphabetAmount; i++)
-            tapeAlphabet[i] = sc.next().charAt(0);
+        sb.append("Alfabeto de entrada: ").append(Arrays.toString(input_alphabet)).append("\n\n");
 
-        sc.nextLine();
+        String[] output_alphabet = reader.readLine().split(" ");
 
-        Map<Input, Output> functions = new HashMap<>();
-        for (int i = 0; i < functionAmount; i++) {
+        sb.append("Alfabeto da fita: ").append(Arrays.toString(output_alphabet)).append("\n\n");
 
-            String line = sc.nextLine();
-            functions.put(new Input(line.substring(0, line.indexOf("="))), new Output(line.substring(line.indexOf("=")+1)));
+        sb.append("Funções de transição: ").append("\n");
+        for (int i = 0; i < n_transitions; i++) {
+
+            String[] transition = reader.readLine().split("=");
+            String[] in_parts = transition[0].substring(1, transition[0].length() - 1).split(",");
+            String[] out_parts = transition[1].substring(1, transition[1].length() - 1).split(",");
+            machine.addTransition(
+                    in_parts[0].trim(),
+                    in_parts[1].charAt(0),
+                    out_parts[0].trim(),
+                    out_parts[1].charAt(0),
+                    out_parts[2].charAt(0)
+            );
+
+            sb.append(Arrays.toString(transition)).append("\n");
 
         }
 
-        TuringMachine TM = new TuringMachine(new States(states), inputAlphabet, new TapeAlphabet(tapeAlphabet), functions);
+        String input_tape = reader.readLine();
+        machine.setInputTape(input_tape);
 
-        TM.setTape(sc.nextLine());
+        sb.append("\n").append("Fita de entrada: ").append(input_tape).append("\n\n");
 
-        new Main().initGUI(TM);
+        sb.append("Quadruplas: ").append("\n").append(machine.getTransitions());
 
+        new TuringMachineGUI(machine, sb.toString());
     }
-
-    Box vertical = Box.createVerticalBox();
-    CustomBackgroundLabel lblCurrentTape;
-    JLabel lblCurrentState = new JLabel();
-
-    JButton btnNext = new JButton(">");
-    JButton btnEnd = new JButton(">>");
-
-    Font font = new Font("a", Font.PLAIN, 40);
-
-    TuringMachine TM = null;
-
-    private void initGUI(TuringMachine TM){
-
-        lblCurrentTape = new CustomBackgroundLabel(TM.getCurrentTape(), 1);
-        lblCurrentTape.setFont(font);
-        lblCurrentState.setFont(font);
-
-        this.TM = TM;
-
-        JPanel contentPane = new JPanel(new BorderLayout());
-        setContentPane(contentPane);
-
-        JPanel centerPane = new JPanel(new FlowLayout());
-
-        contentPane.add(centerPane, BorderLayout.CENTER);
-
-        vertical.add(lblCurrentState);
-        vertical.add(lblCurrentTape);
-
-        centerPane.add(vertical);
-
-        JPanel buttons = new JPanel(new FlowLayout());
-
-        buttons.add(btnNext);
-        buttons.add(btnEnd);
-
-        contentPane.add(buttons, BorderLayout.SOUTH);
-
-        btnNext.addActionListener(a -> updateTape(false));
-        btnEnd.addActionListener(a -> updateTape(true));
-
-        JPanel initialInfo = new JPanel();
-        initialInfo.setLayout(new BoxLayout(initialInfo, BoxLayout.Y_AXIS));
-        contentPane.add(initialInfo, BorderLayout.WEST);
-        JTextPane textPane = new JTextPane();
-        initialInfo.add(textPane);
-        textPane.setEditable(false);
-
-        textPane.setText("Estados: " + TM.getStates() + "\n\n" +
-                "Alfabeto de entrada: " + TM.getInputAlphabet() + "\n\n" +
-                "Alfabeto da fita: " + TM.getTapeAlphabet() + "\n\n" +
-                "Funções de transição: \n");
-
-        for(Map.Entry<Input, Output> f : TM.getFunctions().entrySet())
-            textPane.setText(textPane.getText() + f.getKey() + " = " + f.getValue() + "\n");
-
-        lblCurrentState.setText("Estado atual: "+TM.getInitialState());
-
-        pack();
-        setLocationRelativeTo(null);
-        setVisible(true);
-
-    }
-
-    private void updateTape(boolean terminate){
-
-        boolean hasNext;
-
-        do {
-
-            hasNext = TM.next();
-
-            vertical.remove(lblCurrentTape);
-
-            lblCurrentTape = new CustomBackgroundLabel(TM.getCurrentTape(), TM.getHeadPosition() * 2 + 1);
-
-            lblCurrentTape.setFont(font);
-
-            vertical.add(lblCurrentTape);
-
-            lblCurrentState.setText("Estado atual: " + TM.getCurrentState());
-
-            btnNext.setEnabled(hasNext);
-            btnEnd.setEnabled(hasNext);
-
-            pack();
-            revalidate();
-
-        }while (terminate && hasNext);
-    }
-
 }
