@@ -17,7 +17,7 @@ public class TuringMachineGUI extends JDialog implements ActionListener {
     private final JButton btnNext = new JButton(">");
     private final JButton btnSkip = new JButton(">>");
 
-    private final JPanel centerPane = new JPanel();
+    private final JPanel centerPane = new JPanel(new FlowLayout());
 
     public TuringMachineGUI(TuringMachine machine, String initialString){
 
@@ -77,7 +77,11 @@ public class TuringMachineGUI extends JDialog implements ActionListener {
 
         historyTextPane.setText(historyTextPane.getText()+"\n"+machine.historyTape);
 
+        JLabel lblCurrentState = new JLabel("Estado atual: "+machine.currentState);
+        lblCurrentState.setFont(new Font("", Font.PLAIN, 30));
+
         centerPane.add(currentTape);
+        centerPane.add(lblCurrentState);
 
         currentTape.revalidate();
         centerPane.revalidate();

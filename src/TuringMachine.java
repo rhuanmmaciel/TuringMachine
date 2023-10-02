@@ -14,7 +14,7 @@ public class TuringMachine {
     private int inputHead;
     private int historyHead;
 
-    private String currentState;
+    public String currentState;
     private String startState;
     private String finalState;
     public final List<Transition> transitions;
